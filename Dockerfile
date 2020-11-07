@@ -13,7 +13,7 @@ RUN npm install -g nodemon
 RUN npm install
 
 # expose port to docker daemon
-EXPOSE 8080
+EXPOSE 3000
 
 # define command to run app
 CMD ["npm", "start"]
