@@ -3,41 +3,48 @@ const bodyParser = require('body-parser')
 const bcrypt = require('body-parser')
 const cors = require('cors')
 const knex = require('knex')
-const { PORT, HOST, DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE } = require('./config')
+const { PORT, HOST, DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE, DB_PORT } = require('./config')
 
 const app = express()
 app.use(bodyParser.json())
 app.use(cors())
 
-const database = {
-  users: [
-    {
-      id: '123',
-      name: 'vho',
-      email: 'vho@mail.com',
-      password: 'p@ssword',
-      entries: 0,
-      joined: new Date()
-    },
-    {
-      id: '124',
-      name: 'sally',
-      email: 'sally@mail.com',
-      password: 'bananas',
-      entries: 0,
-      joined: new Date()
-    }
-  ]
-}
+const db = knex({
+  client: 'pg',
+  connection: {
+    host : `postgresdb`,
+    user : `${DB_USER}`,
+    password : `${DB_PASSWORD}`,
+    database : `${DB_DATABASE}`
+  }
+})
+
+db.select('*').from('users')
+  .then(data => console.log(data))
+  .catch(err => console.log(err))
+
+app.get('/', (req, res) => {
+  res.send(db.users)
+  console.log('get users')
+})
+
+app.post('/register', (req, res) => {
+  const { email, name } = req.body
+
+  db('users')
+  .returning('*')
+  .insert({
+    email: email,
+    name: name,
+    joined: new Date()
+  }).then(console.log)
+})
 
 const checklogin = (email, password) => {
   const verifiedUser = database.users.filter(user => user.email === email && user.password === password)
   return verifiedUser.length > 0 ? 'success' : 'error'
 }
 
-app.get('/', (req, res) => {
-  res.send(database.users)
-})
 
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params
@@ -63,23 +70,6 @@ app.post('/signin', (req, res) => {
   res.json('signing in')
 })
 
-app.post('/register', (req, res) => {
-  const { email, name, password } = req.body
-  database.users.push({
-    id: '125',
-    name: name,
-    email: email,
-    password: password,
-    entries: 0,
-    joined: new Date()
-  })
-  // db('users').insert({
-  //   email: email,
-  //   name: name
-  // })
-  res.json(database.users[database.users.length - 1])
-})
-
 app.post('/image', (req, res) => {
   const { id } = req.body
   let found = false
@@ -95,6 +85,6 @@ app.post('/image', (req, res) => {
   }
 })
 
-app.listen(PORT, HOST, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`app is running on http://${HOST}:${PORT}`)
 })
