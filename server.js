@@ -2,42 +2,33 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const bcrypt = require('body-parser')
 const cors = require('cors')
-const knex = require('knex')
-const { PORT, HOST, DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE, DB_PORT } = require('./config')
+const { pool, PORT, HOST } = require('./config')
 
 const app = express()
 app.use(bodyParser.json())
 app.use(cors())
 
-const db = knex({
-  client: 'pg',
-  connection: {
-    host : `postgresdb`,
-    user : `${DB_USER}`,
-    password : `${DB_PASSWORD}`,
-    database : `${DB_DATABASE}`
-  }
-})
-
-db.select('*').from('users')
-  .then(data => console.log(data))
-  .catch(err => console.log(err))
-
 app.get('/', (req, res) => {
-  res.send(db.users)
-  console.log('get users')
+  pool.query('SELECT * FROM users', (err, results) => {
+    if (err) {
+      throw err
+    }
+    res.status(200).json(results.rows)
+  })
 })
 
 app.post('/register', (req, res) => {
   const { email, name } = req.body
-
-  db('users')
-  .returning('*')
-  .insert({
-    email: email,
-    name: name,
-    joined: new Date()
-  }).then(console.log)
+  pool.query(
+    'INSERT INTO users (email, name, joined) VALUES ($1, $2, now())',
+    [email, name],
+    (err) => {
+      if (err) {
+        throw err
+      }
+      res.status(201).json({ status: 'success', message: 'user added'})
+    }
+  )
 })
 
 const checklogin = (email, password) => {
@@ -48,16 +39,16 @@ const checklogin = (email, password) => {
 
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params
-  let found = false
-  database.users.forEach(user => {
-    if(user.id === id) {
-      found = true
-      return res.json(user)
-    } 
-  })
-  if (!found) {
-    res.status(400).json('not found')
-  }
+  pool.query(
+    'SELECT * FROM users WHERE users.id = $1',
+    [id],
+    (err, results) => {
+      if (err) {
+        throw err
+      }
+      res.status(200).json(results.rows[0])
+    }
+  )
 })
 
 app.post('/signin', (req, res) => {
@@ -68,21 +59,6 @@ app.post('/signin', (req, res) => {
     res.status(400).json('error logging in')
   }
   res.json('signing in')
-})
-
-app.post('/image', (req, res) => {
-  const { id } = req.body
-  let found = false
-  database.users.forEach(user => {
-    if(user.id === id) {
-      found = true
-      user.entries++
-      return res.json(user.entries)
-    } 
-  })
-  if (!found) {
-    res.status(400).json('not found')
-  }
 })
 
 app.listen(PORT, '0.0.0.0', () => {
