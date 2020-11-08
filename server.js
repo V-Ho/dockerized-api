@@ -9,26 +9,22 @@ app.use(bodyParser.json())
 app.use(cors())
 
 app.get('/', (req, res) => {
-  pool.query('SELECT * FROM users', (err, results) => {
-    if (err) {
-      throw err
-    }
-    res.status(200).json(results.rows)
+  pool.query('SELECT * FROM users')
+  .then(results => {
+   res.status(200).json(results.rows)
   })
+  .catch(err => res.status(400).json('No users found'))
 })
 
 app.post('/register', (req, res) => {
   const { email, name } = req.body
   pool.query(
     'INSERT INTO users (email, name, joined) VALUES ($1, $2, now())',
-    [email, name],
-    (err) => {
-      if (err) {
-        throw err
-      }
+    [email, name])
+    .then(user => {
       res.status(201).json({ status: 'success', message: 'user added'})
-    }
-  )
+    })
+    .catch(err => res.status(400).json('unable to register'))
 })
 
 const checklogin = (email, password) => {
@@ -41,14 +37,15 @@ app.get('/profile/:id', (req, res) => {
   const { id } = req.params
   pool.query(
     'SELECT * FROM users WHERE users.id = $1',
-    [id],
-    (err, results) => {
-      if (err) {
-        throw err
+    [id])
+    .then(results => {
+      if (results.rows.length) {
+        res.json(results.rows[0])
+      } else {
+        res.status(400).json('user not found')
       }
-      res.status(200).json(results.rows[0])
-    }
-  )
+    })
+    .catch(err => res.status(400).json('error getting user'))
 })
 
 app.post('/signin', (req, res) => {
