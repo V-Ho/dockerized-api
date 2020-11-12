@@ -1,32 +1,32 @@
 version: "3"
 services:
-  web:
+  api:
+    image: registration-api:latest
+    container_name: api
     environment: 
       PORT: ${PORT}
       HOST: ${HOST}
-      DB_USER: ${DB_USER}
-      DB_HOST: ${DB_HOST}
-      CONNECTION_STRING: postgres://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_DATABASE}
     build: 
       context: .
       dockerfile: Dockerfile
+    ports: 
+      - ${PORT}:${PORT}
     volumes:
       - ./:/app
       - /app/node_modules
-    container_name: web
-    ports: 
-      - ${PORT}:${PORT}
+    depends_on:
+      - db
 
   db: 
     image: postgres
     container_name: postgresdb
-    restart: unless-stopped
-    ports:
-      - ${DB_PORT}:${DB_PORT}
     environment: 
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
+    restart: unless-stopped
+    ports:
+      - ${DB_PORT}:${DB_PORT}
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
