@@ -1,8 +1,7 @@
-const handleProfile = (req, res, db) => {
+const handleProfile = (db) => (req, res) => {
   const { id } = req.params
   return db.any('SELECT * FROM users WHERE users.id = $1', [id])
     .then(results => {
-      console.log('id res', results)
       if (results.length) {
         return res.json(results[0])
       } else {

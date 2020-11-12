@@ -1,13 +1,11 @@
-const handleSignin = (req, res, db, bcrypt) => {
+const handleSignin = (db, bcrypt) => (req, res,) => {
   const { email, password } = req.body
 
    db.query('select email, hash from login where login.email = $1', email)
     .then(results => {
-      console.log('results', results)
       if (results.length) {
         let user = results[0]
         const isValid = bcrypt.compareSync(password, user.hash)
-        console.log('isValid', isValid)
         if (isValid) {
           return db.query('select * from users where users.email = $1', email)
             .then(result => {

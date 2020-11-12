@@ -1,4 +1,4 @@
-const handleGetAll = (req, res, db) => {
+const handleGetAll = (db) => (req, res) => {
    db.any('select * from users')
   .then(results => {
     res.status(200)
